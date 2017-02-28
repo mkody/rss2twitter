@@ -10,15 +10,15 @@ Check an rss feed and if the latest entry is different than post it to twitter.
 import sys
 import os
 import traceback
-import cPickle
-from ConfigParser import SafeConfigParser
+import pickle
+from configparser import SafeConfigParser
 from optparse import OptionParser
 
 import feedparser
 import tweepy
 
 
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 
 config = None
 
@@ -33,8 +33,8 @@ def post_update(status):
     api = tweepy.API(auth)
     try:
         api.update_status(status)
-    except tweepy.error.TweepError, e:
-        print "Error occurred while updating status:", e
+    except tweepy.error.TweepError as e:
+        print("Error occurred while updating status:", e)
         sys.exit(1)
     else:
         return True
@@ -56,7 +56,7 @@ def main():
     (options, args) = parser.parse_args()
     config = SafeConfigParser()
     if not config.read(options.config):
-        print 'Could not read config file'
+        print('Could not read config file')
         sys.exit(1)
     rss_uri = config.get('rss', 'uri')
     feed = feedparser.parse(rss_uri)
@@ -64,9 +64,9 @@ def main():
     # but for local use I'd rather do this than a try-catch with open()
     if not os.path.isfile('cache.dat'):
         # make a blank cache file
-        cPickle.dump({'id': None}, open('cache.dat', 'wb'), -1)
+        pickle.dump({'id': None}, open('cache.dat', 'wb'), -1)
 
-    cache = cPickle.load(open('cache.dat'))
+    cache = pickle.load(open('cache.dat', 'rb'))
     if options.all:
         tweet_count = 0
         for entry in feed['entries']:
@@ -81,7 +81,7 @@ def main():
 
             # We keep the first feed in the cache, to use rss2twitter in normal mode the next time
             if tweet_count == 0:
-                cPickle.dump(rss, open('cache.dat', 'wb'), -1)
+                pickle.dump(rss, open('cache.dat', 'wb'), -1)
 
             tweet_count += 1
             if tweet_count >= options.limit:
@@ -98,21 +98,21 @@ def main():
         if cache['id'] != rss['id']:
             #print 'new post'
             post_update('%s %s %s' % (rss['title'], rss['link'], rss['hashtag']))
-            cPickle.dump(rss, open('cache.dat', 'wb'), -1)
+            pickle.dump(rss, open('cache.dat', 'wb'), -1)
 
 
 if __name__ == "__main__":
     try:
         main()
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         # Ctrl-c
         raise e
-    except SystemExit, e:
+    except SystemExit as e:
         # sys.exit()
         raise e
-    except Exception, e:
-        print "ERROR, UNEXPECTED EXCEPTION"
-        print str(e)
+    except Exception as e:
+        print("ERROR, UNEXPECTED EXCEPTION")
+        print(str(e))
         traceback.print_exc()
         sys.exit(1)
     else:
